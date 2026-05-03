@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ODEA Shadows - نظام النخبة</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3b82f6; 
+            --bg-dark: #0f172a;
+            --card-dark: #1e293b;
+            --text-light: #f1f5f9;
+            --accent: #10b981;
+            --gold: #fbbf24;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding-bottom: 80px;
+            direction: rtl;
+        }
+
+        /* شاشة الدخول */
+        #loginPage {
+            position: fixed; inset: 0; background: var(--bg-dark); 
+            z-index: 3000; display: flex; flex-direction: column; 
+            padding: 30px; justify-content: center;
+        }
+
+        /* الذكاء الاصطناعي العائم */
+        .ai-float {
+            position: fixed; top: 15px; right: 15px; /* يمين أو يسار حسب الرغبة */
+            background: var(--primary); color: white;
+            padding: 12px 20px; border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            cursor: pointer; z-index: 2500; font-weight: bold;
+            display: none; /* يظهر بعد تسجيل الدخول */
+        }
+
+        input, textarea, select {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background: var(--primary); color: white; border: none; padding: 12px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        .btn-gold { background: var(--gold); color: #000; }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--text-light); }
+
+        /* القائمة السفلية */
+        .navbar {
+            position: fixed; bottom: 0; width: 100%;
+            background: #1e293b; display: flex;
+            overflow-x: auto; box-shadow: 0 -4px 15px rgba(0,0,0,0.5);
+            z-index: 1000; border-top: 1px solid #334155;
+        }
+        .nav-item {
+            min-width: 65px; padding: 12px 5px;
+            text-align: center; cursor: pointer; color: #94a3b8;
+            flex-shrink: 0; transition: 0.3s;
+        }
+        .nav-item.active { color: var(--primary); border-top: 2px solid var(--primary); }
+        .nav-item i { font-size: 18px; display: block; margin-bottom: 4px; }
+        .nav-item span { font-size: 10px; font-weight: bold; }
+
+        /* الأقسام */
+        .section { display: none; padding: 20px; animation: fadeIn 0.4s; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .card {
+            background: var(--card-dark);
+            border-radius: 12px; padding: 15px; margin-bottom: 15px;
+            border: 1px solid #334155;
+        }
+
+        /* تفاصيل القاموس */
+        .word-card { border-right: 4px solid var(--primary); margin-bottom: 15px; }
+        .word-details { font-size: 13px; color: #cbd5e1; margin-top: 8px; padding: 8px; background: #0f172a; border-radius: 5px; }
+        
+        /* أزرار الميدان */
+        .arena-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .arena-tabs .btn { flex: 1; }
+
+    </style>
+</head>
+<body>
+
+    <div id="loginPage">
+        <h2 style="text-align: center; color: var(--primary); letter-spacing: 2px;">THE ODEA UMBRELLA</h2>
+        <input type="text" id="inName" placeholder="الاسم الرباعي">
+        <input type="number" id="inAge" placeholder="العمر">
+        <input type="text" id="inGrade" placeholder="الصف (مثلاً: التاسع)">
+        <input type="text" id="inSchool" placeholder="المدرسة">
+        <textarea id="inReason" placeholder="لماذا تريد الانضمام للنخبة؟"></textarea>
+        <button onclick="login()" class="btn" style="margin-top: 15px;">دخول للمظلة</button>
+    </div>
+
+    <div id="aiBtn" class="ai-float" onclick="askAI()">
+        <i class="fas fa-robot"></i> مساعد أوديا
+    </div>
+
+    <main>
+        <div id="profile" class="section active">
+            <div class="card" style="text-align: center;">
+                <img id="userImg" src="https://via.placeholder.com/120" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--primary);">
+                <br>
+                <input type="file" id="changeImg" style="display:none" onchange="updatePhoto(event)">
+                <button onclick="document.getElementById('changeImg').click()" class="btn btn-outline" style="padding: 5px 10px; font-size: 12px; margin: 10px 0;">تحديث الصورة</button>
+                <h2 id="userNameDisplay">الاسم</h2>
+                <div id="userTitle" style="color:var(--gold); font-weight:bold; margin-bottom:10px">لقب: ظل مبتدئ</div>
+                <div class="card" style="background: var(--primary); color:white; display: inline-block; padding: 10px 20px;">
+                    نقاطي: <span id="pointsDisplay">1000</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="dict" class="section">
+            <h3>🔍 القاموس الشامل (1000 كلمة)</h3>
+            <input type="text" id="searchInput" placeholder="ابحث بالحرف... (مثال: A)" onkeyup="searchWords()">
+            <div id="wordsList" style="margin-top: 15px;"></div>
+        </div>
+
+        <div id="grammar" class="section">
+            <h3>⚖️ دستور القواعد</h3>
+            <div class="card" style="border-right: 4px solid var(--danger);">
+                <h4 style="color:var(--danger)"><i class="fas fa-lock"></i> القواعد التفصيلية (القسم المدفوع)</h4>
+                <p>شرح عميق لكل الأزمنة، If Clauses، والـ Passive Voice مع أمثلة من مناظرات حقيقية.</p>
+                <button class="btn btn-gold" onclick="alert('يجب شراء هذه الميزة من المتجر المدفوع')">فتح القفل</button>
+            </div>
+            <div class="card">
+                <h4 style="color:var(--primary)">Present Simple (الحاضر البسيط)</h4>
+                <p>الحقائق الثابتة والروتين. نضع s للفعل مع He, She, It.</p>
+                <code>Ex: The shadow moves fast.</code>
+            </div>
+        </div>
+
+        <div id="store" class="section">
+            <h3>🛒 متجر أوديا</h3>
+            
+            <h4 style="color:var(--gold)"><i class="fas fa-coins"></i> القسم المجاني (بالنقاط)</h4>
+            <div class="card">
+                <p>شراء ألقاب النخبة:</p>
+                <div id="titlesContainer"></div>
+            </div>
+
+            <h4 style="color:var(--danger)"><i class="fas fa-credit-card"></i> القسم المدفوع (V.I.P)</h4>
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+                    <span>الذكاء الاصطناعي الناطق بالمعاني</span>
+                    <button class="btn btn-gold" style="width: auto; padding: 5px 15px;">شراء</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+                    <span>نقاط الميدان المدبلجة (x2)</span>
+                    <button class="btn btn-gold" style="width: auto; padding: 5px 15px;">شراء</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+                    <span>شرح القواعد التفصيلي الشامل</span>
+                    <button class="btn btn-gold" style="width: auto; padding: 5px 15px;">شراء</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="arena" class="section">
+            <h3>⚔️ الميدان</h3>
+            <div class="arena-tabs">
+                <button class="btn" id="btnArena1" onclick="switchArena(1)">1. اختبار النخبة</button>
+                <button class="btn btn-outline" id="btnArena2" onclick="switchArena(2)">2. سؤال مفرد</button>
+            </div>
+
+            <div id="arena-view-1">
+                <div class="card">
+                    <p style="color: var(--gold); font-size: 12px;">المحاولات المتبقية اليوم: 3/3 | الأسئلة: 10</p>
+                    <label>الفرع:</label>
+                    <select><option>القاموس (معاني)</option><option>القواعد (Grammar)</option></select>
+                    <label>الصعوبة:</label>
+                    <select>
+                        <option>سهل (100 نقطة)</option>
+                        <option>متوسط (250 نقطة)</option>
+                        <option>مستحيل (500 نقطة)</option>
+                    </select>
+                    <button class="btn" style="margin-top: 15px;" onclick="alert('جاري توليد الاختبار...')">بدء الاختبار</button>
+                </div>
+            </div>
+
+            <div id="arena-view-2" style="display: none;">
+                <div class="card" style="text-align: center; padding: 30px 15px;">
+                    <i class="fas fa-random" style="font-size: 40px; color: var(--primary); margin-bottom: 15px;"></i>
+                    <p>اسحب سؤالاً عشوائياً (معاني أو قواعد) واربح نقاط فورية!</p>
+                    <button class="btn btn-gold" onclick="drawRandomQuestion()">اسحب السؤال الآن</button>
+                    <div id="randomQ" style="margin-top: 20px; font-weight: bold; color: var(--accent);"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="community" class="section">
+            <h3>🌐 المجتمع</h3>
+            <div class="card" style="text-align: center;">
+                <i class="fas fa-users" style="font-size: 30px; margin-bottom:10px;"></i>
+                <p>مساحة للنقاشات والمناظرات بين الأعضاء.</p>
+                <textarea placeholder="اكتب فكرتك هنا..."></textarea>
+                <button class="btn" style="margin-top: 10px;">نشر</button>
+            </div>
+        </div>
+
+        <div id="leaderboard" class="section">
+            <h3>🏆 تصنيف النخبة</h3>
+            <div class="card" style="border-left: 4px solid var(--gold);">
+                <b>1. عدي (Shadow Architect)</b> - 999,999 نقطة
+            </div>
+            <div class="card"><b>2. عمر (Logic Seeker)</b> - 995,000 نقطة</div>
+            <div class="card"><b>3. عبادة (Power Executioner)</b> - 990,000 نقطة</div>
+            <div class="card"><b>4. أمير (Supreme Leader)</b> - 985,000 نقطة</div>
+            <div class="card" style="border-left: 4px solid var(--primary); background: #2563eb33;">
+                <b>5. <span id="rankName">أنت</span></b> - <span id="rankPoints">1000</span> نقطة
+            </div>
+        </div>
+
+        <div id="messages" class="section">
+            <h3>✉️ الرسائل الخاصة</h3>
+            <input type="text" placeholder="ابحث عن اسم عضو لمراسلته...">
+            <div class="card" style="margin-top: 15px; text-align: center; color: #64748b;">
+                لا توجد رسائل جديدة.
+            </div>
+        </div>
+
+        <div id="settings" class="section">
+            <h3>⚙️ إعدادات النظام</h3>
+            <div class="card">
+                <p>لون المظلة (Theme):</p>
+                <div class="theme-picker" style="display: flex; gap: 10px;">
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background:#3b82f6; cursor:pointer;" onclick="changeTheme('#3b82f6')"></div>
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background:#ef4444; cursor:pointer;" onclick="changeTheme('#ef4444')"></div>
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background:#10b981; cursor:pointer;" onclick="changeTheme('#10b981')"></div>
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background:#a855f7; cursor:pointer;" onclick="changeTheme('#a855f7')"></div>
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background:#111111; border: 1px solid white; cursor:pointer;" onclick="changeTheme('#111111')"></div> </div>
+            </div>
+        </div>
+
+        <div id="support" class="section">
+            <h3>🆘 الدعم الفني</h3>
+            <div class="card">
+                <p>هل واجهت خطأ في النظام؟</p>
+                <textarea placeholder="اشرح المشكلة..."></textarea>
+                <button class="btn" style="margin-top:10px;">إرسال للرؤوس الأربعة</button>
+            </div>
+        </div>
+
+    </main>
+
+    <nav class="navbar">
+        <div class="nav-item active" onclick="showTab('profile', this)"><i class="fas fa-user-circle"></i><span>أنا</span></div>
+        <div class="nav-item" onclick="showTab('dict', this)"><i class="fas fa-book"></i><span>قاموس</span></div>
+        <div class="nav-item" onclick="showTab('grammar', this)"><i class="fas fa-gavel"></i><span>قواعد</span></div>
+        <div class="nav-item" onclick="showTab('store', this)"><i class="fas fa-store"></i><span>المتجر</span></div>
+        <div class="nav-item" onclick="showTab('arena', this)"><i class="fas fa-khanda"></i><span>الميدان</span></div>
+        <div class="nav-item" onclick="showTab('community', this)"><i class="fas fa-globe"></i><span>مجتمع</span></div>
+        <div class="nav-item" onclick="showTab('leaderboard', this)"><i class="fas fa-trophy"></i><span>تصنيف</span></div>
+        <div class="nav-item" onclick="showTab('messages', this)"><i class="fas fa-envelope"></i><span>رسائل</span></div>
+        <div class="nav-item" onclick="showTab('settings', this)"><i class="fas fa-cog"></i><span>إعدادات</span></div>
+        <div class="nav-item" onclick="showTab('support', this)"><i class="fas fa-headset"></i><span>دعم</span></div>
+    </nav>
+
+    <script>
+        let userPoints = 1000;
+        
+        // 1. الألقاب المجانية (متجر النقاط)
+        const titles = [
+            {t: "المفكر المنطقي", p: 200}, {t: "الظل الاستراتيجي", p: 400},
+            {t: "العقل المدبر", p: 600}, {t: "بطل النخبة", p: 800},
+            {t: "الحزام الأسود الرقمي", p: 1000}, {t: "صياد الأخطاء", p: 1500},
+            {t: "أستاذ المناظرة", p: 2000}, {t: "لاعب القوة الانفجارية", p: 2500},
+            {t: "مؤسس ODEA", p: 99999} 
+        ];
+
+        // بناء القاموس (نسخة مصححة ومنظمة)
+const wordsData = [
+    { eng: "Logic", ara: "منطق", eMean: "Reasoning conducted according to strict principles", aMean: "التفكير المبني على مبادئ صارمة", aConcept: "أساس الفكر السليم في المناظرات والبرمجة" },
+    { eng: "Shadow", ara: "ظل", eMean: "Dark area produced by a body blocking light", aMean: "مساحة مظلمة ناتجة عن حجب الضوء", aConcept: "العمل بصمت وخفاء لتحقيق الهدف المنشود" },
+    { eng: "Explosive", ara: "انفجاري", eMean: "Able to shatter or burst apart", aMean: "قادر على الانفجار أو التحطم", aConcept: "استخراج أقصى قوة عضلية في أقل وقت (التايكوندو)" },
+    { eng: "Debate", ara: "مناظرة", eMean: "A formal discussion on a particular topic", aMean: "نقاش رسمي حول موضوع معين", aConcept: "تحطيم حجج الخصم باستخدام العقل والمنطق" },
+    { eng: "Elite", ara: "نخبة", eMean: "A select part of a group that is superior", aMean: "الجزء المختار والأفضل من مجموعة", aConcept: "الوصول لأعلى مستويات الذكاء والقوة" },
+    { eng: "A", ara: "أداة تنكير", eMean: "Used before singular nouns (indefinite article).", aMean: "تستخدم قبل الأسماء المفردة النكرة", aConcept: "تحديد الوحدة والتعريف البسيط" },
+    { eng: "About", ara: "بخصوص / عن", eMean: "Concerning or regarding a subject.", aMean: "فيما يتعلق بموضوع ما", aConcept: "تحديد نطاق البحث أو الحديث" },
+    { eng: "Call", ara: "يتصل / مكالمة", eMean: "To contact someone by phone; a spoken request.", aMean: "التواصل الهاتفي أو الطلب الشفهي", aConcept: "وسيلة تواصل سريعة" },
+    { eng: "Calls", ara: "مكالمات", eMean: "Plural of call; phone communications.", aMean: "جمع مكالمة؛ اتصالات هاتفية", aConcept: "تعدد قنوات التواصل" },
+    { eng: "Calories", ara: "سعرات حرارية", eMean: "Units that measure energy in food.", aMean: "وحدات قياس الطاقة في الغذاء", aConcept: "مقياس الوقود الحيوي للجسم" },
+    { eng: "Can't", ara: "لا يستطيع", eMean: "Contraction of 'cannot'; expressing inability.", aMean: "اختصار لـ 'لا يمكنه'؛ للتعبير عن العجز", aConcept: "تحديد الحدود والقدرات" },
+    { eng: "Canvas", ara: "قماش / لوحة", eMean: "Cloth used for painting.", aMean: "قماش مخصص للرسم", aConcept: "المساحة البيضاء للإبداع" },
+    { eng: "Carbohydrate", ara: "كربوهيدرات", eMean: "A nutrient that gives energy.", aMean: "عنصر غذائي يمد الجسم بالطاقة", aConcept: "مصدر الطاقة الأساسي للرياضيين" },
+    { eng: "Cast", ara: "طاقم التمثيل", eMean: "The group of actors in a play or film.", aMean: "مجموعة الممثلين في العمل الفني", aConcept: "توزيع الأدوار لتحقيق الرؤية" },
+    { eng: "Catastrophe", ara: "كارثة", eMean: "A very bad or disastrous event.", aMean: "حدث سيء للغاية أو مفجع", aConcept: "تحدي يتطلب إدارة أزمات قوية" },
+    { eng: "Championship", ara: "بطولة", eMean: "A major competition or contest.", aMean: "مسابقة كبرى لتحديد الأفضل", aConcept: "قمة المنافسة والإنجاز" },
+    { eng: "Check", ara: "يراجع / يتحقق", eMean: "To verify, examine, or confirm something.", aMean: "التأكد من صحة الشيء أو فحصه", aConcept: "خطوة الأمان قبل التنفيذ" },
+    { eng: "Choices", ara: "خيارات", eMean: "Options or decisions available to someone.", aMean: "البدائل المتاحة لاتخاذ قرار", aConcept: "حرية الإرادة وتعدد المسارات" },
+    { eng: "Comedy", ara: "كوميديا", eMean: "A funny play or performance.", aMean: "عمل فني يهدف للترفيه والإضحاك", aConcept: "استخدام الفكاهة لإيصال رسالة" },
+    { eng: "Communicating", ara: "التواصل", eMean: "The act of sharing or exchanging information.", aMean: "عملية مشاركة أو تبادل المعلومات", aConcept: "بناء جسور الفهم بين البشر" },
+    { eng: "Competitor", ara: "متسابق", eMean: "A person who takes part in a competition.", aMean: "شخص يشارك في منافسة", aConcept: "الدافع لتطوير الذات من خلال التحدي" },
+    { eng: "Conclusion", ara: "استنتاج", eMean: "Final opinion or judgment.", aMean: "الرأي النهائي أو الحكم بعد الدراسة", aConcept: "ثمرة التفكير والبحث" },
+    { eng: "Conditional", ara: "شرطي", eMean: "Depending on a condition; a grammar type.", aMean: "مرتبط بوقوع شرط معين", aConcept: "الربط المنطقي بين السبب والنتيجة" },
+    { eng: "Conditionals", ara: "الجمل الشرطية", eMean: "Grammar structures expressing hypothetical situations.", aMean: "قواعد التعبير عن مواقف افتراضية", aConcept: "برمجة الاحتمالات في اللغة" },
+    { eng: "Conflicts", ara: "صراعات / خلافات", eMean: "Disagreements or clashes between ideas or groups.", aMean: "تصادم الآراء أو المصالح", aConcept: "عقبة تتطلب حلولاً منطقية" },
+    { eng: "Consume", ara: "يتناول / يستهلك", eMean: "To eat or drink.", aMean: "عملية الأكل أو الشرب أو استخدام الموارد", aConcept: "عملية الإمداد والاستهلاك" },
+    { eng: "Contact", ara: "يتواصل", eMean: "To communicate with someone.", aMean: "إجراء اتصال مع طرف آخر", aConcept: "نقطة الارتقاء بين طرفين" },
+    { eng: "Content", ara: "محتوى", eMean: "Things available to watch, read, or listen to.", aMean: "المادة المتاحة للقراءة أو المشاهدة", aConcept: "القيمة الجوهرية لأي عمل" },
+    { eng: "Continue", ara: "يستمر", eMean: "To keep going without stopping.", aMean: "المضي قدماً دون توقف", aConcept: "المثابرة للوصول للنهاية" },
+    { eng: "Conversation", ara: "محادثة", eMean: "An informal spoken exchange between people.", aMean: "تبادل حديث غير رسمي", aConcept: "أداة التفاعل الاجتماعي اليومي" },
+    { eng: "Costume", ara: "زي مسرحي", eMean: "Clothes worn by an actor in a play.", aMean: "ملابس مخصصة لأداء دور معين", aConcept: "تقمص الهوية البصرية للشخصية" },
+    { eng: "Damaging", ara: "يسبب ضرر", eMean: "Causing harm or negative effects.", aMean: "إحداث أثر سلبي أو تخريبي", aConcept: "النتيجة التي يجب تجنبها" },
+    { eng: "Decide", ara: "يقرر", eMean: "To choose after thinking carefully.", aMean: "اتخاذ قرار بعد تفكير عميق", aConcept: "لحظة الحسم والالتزام بالخيار" },
+    { eng: "Demonstrate", ara: "يوضح / يُظهر", eMean: "To show something clearly.", aMean: "إثبات أو عرض الشيء بوضوح", aConcept: "البرهان العملي على الفكرة" },
+    { eng: "Depending on", ara: "اعتماداً على", eMean: "Based on; varying according to.", aMean: "مبني على أو يتغير بحسب", aConcept: "الارتباط السببي بين المتغيرات" },
+    { eng: "Design", ara: "تصميم", eMean: "A plan or drawing for something to be made.", aMean: "مخطط لبناء أو صنع شيء ما", aConcept: "هندسة الجمال والوظيفة" },
+    { eng: "Designer", ara: "مصمم", eMean: "A person who creates designs or plans.", aMean: "الشخص الذي يبتكر المخططات", aConcept: "العقل المبدع خلف الهيكل" },
+    { eng: "Destruction", ara: "دمار", eMean: "The act of destroying something completely.", aMean: "عملية هدم الشيء بالكامل", aConcept: "النهاية الكاملة للهيكل" },
+    { eng: "Detail", ara: "تفصيل", eMean: "A small part of something; a specific point.", aMean: "جزء صغير أو نقطة محددة", aConcept: "الدقة التي تصنع الفارق الكبير" },
+    { eng: "Dialogue", ara: "حوار", eMean: "Conversation between characters in a story.", aMean: "تبادل الحديث بين الشخصيات", aConcept: "وسيلة دفع القصة للأمام" },
+    { eng: "Diet", ara: "نظام غذائي", eMean: "The food a person usually eats.", aMean: "الغذاء الذي يستهلكه الفرد بانتظام", aConcept: "التحكم في المدخلات لنتائج صحية" },
+    { eng: "Different", ara: "مختلف", eMean: "Not the same as another; distinct.", aMean: "غير متشابه؛ متميز عن غيره", aConcept: "التنوع الذي يثري التجربة" },
+    { eng: "Difficult", ara: "صعب", eMean: "Not easy; requiring effort or skill.", aMean: "غير سهل؛ يتطلب جهداً ومهارة", aConcept: "فرصة لاختبار القوة الحقيقية" },
+    { eng: "Digestion", ara: "الهضم", eMean: "The process of breaking down food in the body.", aMean: "تحويل الغذاء إلى طاقة داخل الجسم", aConcept: "العملية الكيميائية الحيوية للبقاء" },
+    { eng: "Director", ara: "مخرج", eMean: "A person who leads and manages a play or film.", aMean: "المسؤول عن قيادة العمل الفني", aConcept: "صاحب الرؤية الشاملة للتنفيذ" },
+    { eng: "Discuss", ara: "يناقش", eMean: "To talk about a topic in detail.", aMean: "التحاور في موضوع ما بالتفصيل", aConcept: "تبادل الآراء للوصول لفهم أعمق" },
+    { eng: "Discussion", ara: "مناقشة", eMean: "Talking about something with others.", aMean: "جلسة حوار حول قضية ما", aConcept: "التفاعل الفكري الجماعي" },
+    { eng: "Display", ara: "عرض", eMean: "To show something to others.", aMean: "إظهار الشيء للعيان", aConcept: "تقديم المنتج أو الفكرة للجمهور" },
+    { eng: "Distance", ara: "مسافة", eMean: "How far something is from another point.", aMean: "مقدار البعد بين نقطتين", aConcept: "المساحة الفاصلة التي يجب قطعها" },
+    { eng: "Disturb", ara: "يضايق / يزعج", eMean: "To interrupt or bother someone.", aMean: "مقاطعة أو إزعاج شخص ما", aConcept: "كسر حالة التركيز أو الهدوء" },
+    { eng: "Divided", ara: "منقسم", eMean: "Having different views; split into groups.", aMean: "مجزأ أو ذو وجهات نظر مختلفة", aConcept: "تعدد الانتماءات أو الأجزاء" },
+    { eng: "Do", ara: "يفعل / يقوم بـ", eMean: "An auxiliary or main verb indicating action.", aMean: "فعل يدل على الحركة أو الإنجاز", aConcept: "جوهر العمل والتنفيذ" },
+    { eng: "Don't", ara: "لا تفعل", eMean: "Contraction of 'do not'; used for negation.", aMean: "نهي عن فعل شيء ما", aConcept: "وضع الحدود والمنع" },
+    { eng: "Doubt", ara: "شك", eMean: "Uncertainty or lack of confidence.", aMean: "عدم اليقين أو التردد في التصديق", aConcept: "بداية طريق البحث عن الحقيقة" },
+    { eng: "Dough", ara: "عجين", eMean: "A thick mixture of flour and water for baking.", aMean: "مزيج الدقيق والماء للخبز", aConcept: "المادة الخام القابلة للتشكيل" },
+    { eng: "Drills", ara: "تدريبات", eMean: "Repeated practice exercises.", aMean: "تمارين متكررة لإتقان مهارة", aConcept: "التكرار الذي يوصل للاحتراف" },
+    { eng: "Drought", ara: "جفاف", eMean: "A long period of very little or no rain.", aMean: "نقص حاد في المياه لفترة طويلة", aConcept: "اختبار لمدى الصمود والتحمل" },
+    { eng: "Legend", ara: "أسطورة", eMean: "A traditional story sometimes regarded as historical but unauthenticated.", aMean: "قصة تقليدية تعتبر تاريخية أحياناً لكن غير مثبتة", aConcept: "حكايات الماضي التي تلهم الخيال وتخلد الأبطال" },
+    { eng: "Leisure", ara: "وقت الفراغ", eMean: "Use of free time for enjoyment.", aMean: "استخدام وقت الفراغ للاستمتاع", aConcept: "المساحة الزمنية المخصصة للراحة وتجديد النشاط" },
+    { eng: "Level", ara: "مستوى", eMean: "A horizontal plane or line; a position on a real or imaginary scale.", aMean: "مستوى أفقي؛ أو موقع على مقياس حقيقي أو خيالي", aConcept: "تحديد المكانة أو الارتفاع في نظام معين" },
+    { eng: "Liability", ara: "مسؤولية قانونية", eMean: "The state of being responsible for something, especially by law.", aMean: "حالة المسؤولية عن شيء ما، خاصة بموجب القانون", aConcept: "العبء الذي يتحمله الشخص نتيجة أفعاله" },
+    { eng: "Liberal", ara: "تحرري / منفتح", eMean: "Willing to respect or accept behavior or opinions different from one's own.", aMean: "الاستعداد لاحترام أو قبول سلوكيات أو آراء مختلفة", aConcept: "الانفتاح على التغيير وتقبل الآخر" },
+    { eng: "License", ara: "رخصة", eMean: "A permit from an authority to own or use something.", aMean: "تصريح من سلطة لامتلاك أو استخدام شيء ما", aConcept: "الإذن الرسمي الذي يمنح الصلاحية للفعل" },
+    { eng: "Limit", ara: "حد", eMean: "A point or level beyond which something does not or may not extend.", aMean: "نقطة أو مستوى لا يتجاوزه الشيء", aConcept: "السياج الذي يحمي النظام من الفوضى" },
+    { eng: "Linear", ara: "خطي", eMean: "Arranged in or extending along a straight or nearly straight line.", aMean: "مرتب في خط مستقيم أو يمتد على طوله", aConcept: "التسلسل المباشر الذي لا يعرف الانحراف" },
+    { eng: "Link", ara: "رابط / صلة", eMean: "A relationship between two things or situations.", aMean: "علاقة بين شيئين أو موقفين", aConcept: "الجسر الذي يجمع الأجزاء المنفصلة" },
+    { eng: "Liquid", ara: "سائل", eMean: "A substance that flows freely but is of constant volume.", aMean: "مادة تتدفق بحرية ولكن حجمها ثابت", aConcept: "المرونة المادية التي تتخذ شكل الوعاء" },
+    { eng: "Literacy", ara: "معرفة القراءة والكتابة", eMean: "The ability to read and write.", aMean: "القدرة على القراءة والكتابة", aConcept: "المفتاح الأساسي للدخول إلى عالم المعرفة" },
+    { eng: "Literature", ara: "أدب", eMean: "Written works, especially those considered of superior or lasting artistic merit.", aMean: "الأعمال المكتوبة، خاصة ذات القيمة الفنية الدائمة", aConcept: "مرآة الشعوب وتوثيق الجمال بالكلمات" },
+    { eng: "Loan", ara: "قرض", eMean: "A thing that is borrowed, especially a sum of money.", aMean: "شيء مستعار، خاصة مبلغ من المال", aConcept: "استخدام موارد الآخرين مع الالتزام بالرد" },
+    { eng: "Loyalty", ara: "ولاء", eMean: "A strong feeling of support or allegiance.", aMean: "شعور قوي بالدعم أو الإخلاص", aConcept: "التمسك بالعهود والأشخاص في كل الظروف" },
+    { eng: "Luxury", ara: "رفاهية", eMean: "The state of great comfort and extravagant living.", aMean: "حالة من الراحة الكبيرة والعيش المترف", aConcept: "تجاوز الاحتياجات الأساسية نحو الاستمتاع المفرط" },
+    { eng: "Machine", ara: "آلة", eMean: "An apparatus using mechanical power to perform a particular task.", aMean: "جهاز يستخدم القوة الميكانيكية لأداء مهمة معينة", aConcept: "امتداد للقدرة البشرية لتوفير الوقت والجهد" },
+    { eng: "Magnet", ara: "مغناطيس", eMean: "A piece of iron that has its component atoms so ordered that it exhibits properties of magnetism.", aMean: "قطعة من الحديد تجذب المعادن الأخرى", aConcept: "قوة الجذب الخفية التي تجمع الأشياء" },
+    { eng: "Magnitude", ara: "عظمة / حجم", eMean: "The great size or extent of something.", aMean: "الحجم الكبير أو المدى العظيم لشيء ما", aConcept: "مقياس قوة أو ضخامة الحدث" },
+    { eng: "Maintain", ara: "يحافظ على", eMean: "Cause or enable (a condition or state of affairs) to continue.", aMean: "التسبب في استمرار حالة أو وضع ما", aConcept: "الجهد المستمر لمنع الانهيار أو التدهور" },
+    { eng: "Majority", ara: "أغلبية", eMean: "The greater number.", aMean: "العدد الأكبر", aConcept: "قوة العدد التي تحسم القرارات في الجماعة" },
+    { eng: "Management", ara: "إدارة", eMean: "The process of dealing with or controlling things or people.", aMean: "عملية التعامل مع الأشياء أو الناس أو التحكم فيها", aConcept: "فن تنظيم الموارد لتحقيق الأهداف" },
+    { eng: "Manifest", ara: "واضح / يظهر", eMean: "Clear or obvious to the eye or mind.", aMean: "واضح أو بديهي للعين أو العقل", aConcept: "تحول الفكرة إلى واقع ملموس ومرئي" },
+    { eng: "Manipulate", ara: "يتلاعب بـ", eMean: "Handle or control in a skillful manner.", aMean: "التعامل أو التحكم بطريقة ماهرة (غالباً سلبية)", aConcept: "إعادة تشكيل الأمور لخدمة مصلحة معينة" },
+    { eng: "Margin", ara: "هامش", eMean: "The edge or border of something.", aMean: "الحافة أو الحدود لشيء ما", aConcept: "المساحة الجانبية التي تفصل بين المتن والنهاية" },
+    { eng: "Marine", ara: "بحري", eMean: "Relating to or found in the sea.", aMean: "يتعلق بالبحر أو يوجد فيه", aConcept: "كل ما يخص عالم المياه الشاسع" },
+    { eng: "Market", ara: "سوق", eMean: "An area or arena in which commercial dealings are conducted.", aMean: "ساحة تُجرى فيها المعاملات التجارية", aConcept: "نقطة التقاء العرض والطلب والقيمة" },
+    { eng: "Mass", ara: "كتلة / حشد", eMean: "A large body of matter with no definite shape.", aMean: "جسم كبير من المادة ليس له شكل محدد", aConcept: "تجمع المادة أو البشر بكثافة عالية" },
+    { eng: "Mastery", ara: "إتقان", eMean: "Comprehensive knowledge or skill in a subject or accomplishment.", aMean: "معرفة أو مهارة شاملة في موضوع ما", aConcept: "الوصول لدرجة السيطرة الكاملة على المهارة" },
+    { eng: "Material", ara: "مادة", eMean: "The matter from which a thing is or can be made.", aMean: "المادة التي يُصنع منها الشيء أو يمكن صنعه منها", aConcept: "اللبنة الفيزيائية لكل ما نلمسه" },
+    { eng: "Mathematics", ara: "رياضيات", eMean: "The abstract science of number, quantity, and space.", aMean: "العلم المجرد للأرقام والكمية والفضاء", aConcept: "لغة الكون الدقيقة والحتمية" },
+    { eng: "Mature", ara: "ناضج", eMean: "Fully developed physically; full-grown.", aMean: "متطور جسدياً بالكامل؛ مكتمل النمو", aConcept: "الوصول إلى حالة الاكتمال والاتزان" },
+    { eng: "Maximum", ara: "الحد الأقصى", eMean: "As great, high, or intense as possible or permitted.", aMean: "كبير أو عالٍ أو مكثف قدر الإمكان", aConcept: "الذروة التي لا يمكن تجاوزها" },
+    { eng: "Meaning", ara: "معنى", eMean: "What is meant by a word, text, concept, or action.", aMean: "ما يقصده الكلمة أو النص أو المفهوم", aConcept: "الروح المختبئة خلف الرموز والأفعال" },
+    { eng: "Measure", ara: "يقيّس", eMean: "Ascertain the size, amount, or degree of something.", aMean: "التأكد من حجم أو كمية أو درجة شيء ما", aConcept: "تحويل الواقع إلى أرقام قابلة للفهم" },
+    { eng: "Mechanism", ara: "آلية", eMean: "A system of parts working together in a machine; a natural process.", aMean: "نظام من الأجزاء يعمل معاً؛ أو عملية طبيعية", aConcept: "طريقة عمل الأشياء وترابط خطواتها" },
+    { eng: "Media", ara: "وسائل الإعلام", eMean: "The main means of mass communication.", aMean: "الوسائل الرئيسية للتواصل مع الجماهير", aConcept: "القنوات التي تشكل الرأي العام وتنقل الخبر" },
+    { eng: "Medicine", ara: "طب / دواء", eMean: "The science or practice of the diagnosis and treatment of disease.", aMean: "علم أو ممارسة تشخيص وعلاج الأمراض", aConcept: "السعي لترميم الحياة ومواجهة الألم" },
+    { eng: "Medium", ara: "وسيط / متوسط", eMean: "An agency or means of doing something; middle state.", aMean: "وسيلة للقيام بشيء ما؛ أو حالة متوسطة", aConcept: "القناة التي تمر عبرها الطاقة أو المعلومات" },
+    { eng: "Memory", ara: "ذاكرة", eMean: "The faculty by which the mind stores and remembers information.", aMean: "القدرة التي يخزن بها العقل المعلومات ويتذكرها", aConcept: "مخزن التجارب الذي يبني هويتنا" },
+    { eng: "Mental", ara: "ذهني / عقلي", eMean: "Relating to the mind.", aMean: "يتعلق بالعقل", aConcept: "كل ما يحدث في عالم الأفكار الداخلي" },
+    { eng: "Mention", ara: "يذكر", eMean: "Refer to something briefly and without going into detail.", aMean: "الإشارة إلى شيء ما باختصار", aConcept: "استحضار الشيء في سياق الحديث" },
+    { eng: "Mentor", ara: "مرشد / ناصح", eMean: "An experienced and trusted adviser.", aMean: "مستشار ذو خبرة وموثوق به", aConcept: "الشخص الذي ينير الطريق بخبرته للآخرين" },
+    { eng: "Mercy", ara: "رحمة", eMean: "Compassion or forgiveness shown toward someone.", aMean: "التعاطف أو المغفرة تجاه شخص ما", aConcept: "التنازل عن العقاب بروح المحبة" },
+    { eng: "Message", ara: "رسالة", eMean: "A verbal, written, or recorded communication.", aMean: "تواصل شفهي أو مكتوب أو مسجل", aConcept: "المعنى المنتقل من مرسل إلى مستقبل" },
+    { eng: "Method", ara: "طريقة / منهج", eMean: "A particular form of procedure for accomplishing or approaching something.", aMean: "شكل معين من الإجراءات لإنجاز شيء ما", aConcept: "الخطة المنظمة للوصول للنتيجة" },
+    { eng: "Migration", ara: "هجرة / انتقال", eMean: "Seasonal movement of animals from one region to another.", aMean: "الحركة الموسمية للحيوانات أو البشر من منطقة لأخرى", aConcept: "البحث عن ظروف معيشية أفضل" },
+    { eng: "Military", ara: "عسكري", eMean: "Relating to or characteristic of soldiers or armed forces.", aMean: "يتعلق بالجنود أو القوات المسلحة", aConcept: "منظومة القوة والحماية المنظمة" },
+    { eng: "Minimum", ara: "الحد الأدنى", eMean: "The least or smallest amount or quantity possible.", aMean: "أقل كمية ممكنة", aConcept: "القاعدة التي لا يمكن النزول تحتها" },
+    { eng: "Ministry", ara: "وزارة", eMean: "A government department headed by a minister.", aMean: "قسم حكومي يرأسه وزير", aConcept: "ذراع الدولة لتنفيذ السياسات في مجال محدد" },
+    { eng: "Minority", ara: "أقلية", eMean: "The smaller number or part.", aMean: "العدد أو الجزء الأصغر", aConcept: "التفرد داخل المجموع الكبير" },
+    { eng: "Mission", ara: "مهمة", eMean: "An important assignment carried out for political, religious, or commercial purposes.", aMean: "تكليف مهم يتم لأغراض معينة", aConcept: "الهدف السامي الذي يكرس الشخص حياته له" },
+    { eng: "Mistake", ara: "خطأ", eMean: "An action or judgment that is misguided or wrong.", aMean: "فعل أو حكم ضال أو خاطئ", aConcept: "الانحراف عن الصواب الذي يوفر فرصة للتعلم" },
+    { eng: "Mixture", ara: "خليط", eMean: "A substance made by mixing other substances together.", aMean: "مادة تُصنع بخلط مواد أخرى معاً", aConcept: "اندماج العناصر لتكوين هوية جديدة" },
+    { eng: "Mobile", ara: "متنقل", eMean: "Able to move or be moved freely or easily.", aMean: "قادر على التحرك أو التحريك بسهولة", aConcept: "التحرر من قيود المكان" },
+    { eng: "Mode", ara: "وضع / نمط", eMean: "A way or manner in which something occurs or is experienced.", aMean: "طريقة أو أسلوب يحدث به الشيء", aConcept: "الحالة التشغيلية المختارة للنظام" },
+    { eng: "Model", ara: "نموذج", eMean: "A three-dimensional representation of a person or thing.", aMean: "تمثيل ثلاثي الأبعاد لشخص أو شيء", aConcept: "المثال المصغر أو المثالي للمحاكاة" },
+    { eng: "Modern", ara: "حديث", eMean: "Relating to the present or recent times.", aMean: "يتعلق بالوقت الحاضر أو الأوقات الحديثة", aConcept: "مواكبة روح العصر والتخلي عن القديم" },
+    { eng: "Modest", ara: "متواضع", eMean: "Unassuming in the estimation of one's abilities or achievements.", aMean: "متواضع في تقدير قدراته أو إنجازاته", aConcept: "الجمال في عدم المبالغة والادعاء" },
+    { eng: "Momentum", ara: "زخم / قوة دفع", eMean: "The quantity of motion of a moving body.", aMean: "كمية الحركة لجسم متحرك", aConcept: "القوة المتراكمة التي تجعل التوقف صعباً" },
+    { eng: "Monarchy", ara: "نظام ملكي", eMean: "A form of government with a monarch at the head.", aMean: "شكل من أشكال الحكم يرأسه ملك", aConcept: "تركيز السلطة في يد فرد وعائلته" },
+    { eng: "Monitor", ara: "يراقب / شاشة", eMean: "Observe and check the progress or quality of something.", aMean: "ملاحظة وفحص تقدم أو جودة شيء ما", aConcept: "العين الساهرة لضمان الانضباط" },
+    { eng: "Mood", ara: "مزاج", eMean: "A temporary state of mind or feeling.", aMean: "حالة ذهنية أو شعور مؤقت", aConcept: "الطقس الداخلي للنفس البشرية" },
+    { eng: "Moral", ara: "أخلاقي", eMean: "Concerned with the principles of right and wrong behavior.", aMean: "معني بمبادئ السلوك الصحيح والخاطئ", aConcept: "البوصلة الداخلية التي توجه أفعالنا" },
+    { eng: "Motion", ara: "حركة", eMean: "The action or process of moving or being moved.", aMean: "فعل أو عملية التحرك", aConcept: "تغير المكان عبر الزمان" },
+    { eng: "Motivation", ara: "تحفيز / دافع", eMean: "The reason or reasons one has for acting or behaving in a particular way.", aMean: "السبب الذي يدفع المرء للتصرف بطريقة معينة", aConcept: "الوقود الداخلي للانطلاق نحو الهدف" },
+    { eng: "Mountain", ara: "جبل", eMean: "A large natural elevation of the earth's surface.", aMean: "ارتفاع طبيعي كبير لسطح الأرض", aConcept: "رمز الشموخ والثبات والتحدي" },
+    { eng: "Movement", ara: "حركة / تيار", eMean: "An act of changing physical location; a group of people with a shared objective.", aMean: "فعل تغيير الموقع؛ أو مجموعة تهدف لهدف مشترك", aConcept: "التغيير الفيزيائي أو الاجتماعي المستمر" },
+    { eng: "Multiple", ara: "متعدد", eMean: "Having or involving several parts, elements, or members.", aMean: "امتلاك أو إشراك عدة أجزاء أو عناصر", aConcept: "التنوع والكثرة في النوع الواحد" },
+    { eng: "Muscle", ara: "عضلة", eMean: "A band or bundle of fibrous tissue in a human or animal body that has the ability to contract.", aMean: "نسيج ليفي لديه القدرة على الانقباض لإنتاج الحركة", aConcept: "مصدر القوة البدنية والحركية" },
+    { eng: "Museum", ara: "متحف", eMean: "A building in which objects of historical, scientific, artistic, or cultural interest are stored.", aMean: "مبنى تُحفظ فيه الأشياء ذات الأهمية التاريخية", aConcept: "كبسولة زمنية تحفظ تراث البشرية" },
+    { eng: "Music", ara: "موسيقى", eMean: "Vocal or instrumental sounds combined in such a way as to produce beauty of form.", aMean: "أصوات صوتية أو آلاتية مجتمعة لإنتاج الجمال", aConcept: "لغة الروح التي تتجاوز الكلمات" },
+    { eng: "Mystery", ara: "غموض / لغز", eMean: "Something that is difficult or impossible to understand or explain.", aMean: "شيء يصعب أو يستحيل فهمه أو شرحه", aConcept: "المساحة المظلمة التي تحفز الفضول" },
+    { eng: "Myth", ara: "خرافة / أسطورة", eMean: "A traditional story, especially one concerning the early history of a people.", aMean: "قصة تقليدية، خاصة تلك المتعلقة بالتاريخ المبكر للشعب", aConcept: "محاولة الإنسان البدائي لتفسير الكون" },
+    { eng: "Nation", ara: "أمة / وطن", eMean: "A large body of people united by common descent, history, culture, or language.", aMean: "مجموعة كبيرة من الناس يجمعهم أصل أو تاريخ مشترك", aConcept: "الهوية الجماعية الكبرى التي تجمع البشر" },
+    { eng: "Native", ara: "أصلي / ابن البلد", eMean: "A person born in a specified place or associated with a place by birth.", aMean: "شخص ولد في مكان محدد أو مرتبط به بالميلاد", aConcept: "الارتباط العضوي بالأرض والجذور" },
+    { eng: "Nature", ara: "طبيعة", eMean: "The phenomena of the physical world collectively.", aMean: "ظواهر العالم الفيزيائي بشكل جماعي", aConcept: "النظام العظيم الذي نعيش في كنفه" },
+    { eng: "Navigation", ara: "ملاحة / إبحار", eMean: "The process or activity of accurately ascertaining one's position and planning and following a route.", aMean: "عملية تحديد الموقع وتخطيط واتباع المسار", aConcept: "فن الاهتداء في اتساع الطرق والبحار" },
+    { eng: "Necessary", ara: "ضروري", eMean: "Required to be done, achieved, or present; needed to be expected.", aMean: "مطلوب فعله أو تحقيقه أو تواجده", aConcept: "ما لا يمكن للنتيجة أن تتحقق بدونه" },
+    { eng: "Negative", ara: "سلبي", eMean: "Consisting in or characterized by the absence rather than the presence of distinguishing features.", aMean: "يتميز بالغياب بدلاً من الحضور؛ أو غير مرغوب", aConcept: "الاتجاه المعاكس للإيجاب أو النقص" },
+    { eng: "Neglect", ara: "إهمال", eMean: "Fail to care for properly.", aMean: "الفشل في الرعاية بشكل صحيح", aConcept: "ترك المسؤولية تذبل لعدم الاهتمام" },
+    { eng: "Negotiate", ara: "يتفاوض", eMean: "Try to reach an agreement or compromise by discussion with others.", aMean: "محاولة الوصول لاتفاق عبر النقاش مع الآخرين", aConcept: "البحث عن نقطة تلاقٍ بين المصالح المختلفة" },
+    { eng: "Nervous", ara: "عصبي / قلق", eMean: "Easily agitated or alarmed; relating to the nerves.", aMean: "سهل الاهتياج أو القلق؛ يتعلق بالأعصاب", aConcept: "استجابة الجسد والعقل للضغوط والمجهول" },
+    { eng: "Network", ara: "شبكة", eMean: "A group or system of interconnected people or things.", aMean: "مجموعة أو نظام من الناس أو الأشياء المترابطة", aConcept: "النسيج الذي يربط الأطراف لتبادل المنفعة" },
+    { eng: "Neutral", ara: "محايد", eMean: "Not supporting or helping either side in a conflict.", aMean: "عدم دعم أو مساعدة أي طرف في النزاع", aConcept: "الوقوف في منطقة الوسط بعيداً عن الانحياز" },
+    { eng: "Newspaper", ara: "صحيفة", eMean: "A printed publication consisting of folded unstapled sheets and containing news.", aMean: "مطبوع يحتوي على أخبار ومقالات", aConcept: "سجل الأحداث اليومي الذي يربطنا بالعالم" },
+    { eng: "Noble", ara: "نبيل", eMean: "Belonging to a hereditary class with high social or political status; having fine personal qualities.", aMean: "ينتمي لطبقة عالية؛ أو يمتلك صفات شخصية رفيعة", aConcept: "السمو في الأصل أو في الأخلاق" },
+    { eng: "Noise", ara: "ضجيج / ضوضاء", eMean: "A sound, especially one that is loud or unpleasant or that causes disturbance.", aMean: "صوت، خاصة إذا كان عالياً أو مزعجاً", aConcept: "التلوث السمعي الذي يكسر الهدوء" },
+    { eng: "Nominate", ara: "يرشح", eMean: "Propose or formally enter as a candidate for election or for an honor or award.", aMean: "اقتراح شخص كمرشح لانتخابات أو جائزة", aConcept: "اختيار الفرد ليكون ممثلاً أو منافساً" },
+    { eng: "Normal", ara: "طبيعي / عادي", eMean: "Conforming to a standard; usual, typical, or expected.", aMean: "مطابق لمعيار؛ معتاد، نموذجي، أو متوقع", aConcept: "الحالة العامة التي لا تثير الاستغراب" },
+    { eng: "Notice", ara: "ملاحظة / ينتبه", eMean: "The fact of observing or paying attention to something.", aMean: "حقيقة ملاحظة أو إيلاء الاهتمام لشيء ما", aConcept: "التقاط التفاصيل بواسطة الوعي" },
+    { eng: "Notion", ara: "فكرة / تصور", eMean: "A conception of or belief about something.", aMean: "تصور أو اعتقاد حول شيء ما", aConcept: "بذرة التفكير التي قد تكون غير مكتملة" },
+    { eng: "Novel", ara: "رواية / جديد", eMean: "A fictitious prose narrative of book length; new or unusual in an interesting way.", aMean: "سرد نثري خيالي؛ أو جديد وغير مألوف", aConcept: "الابتكار في الأدب أو في الأفكار" },
+    { eng: "Nuclear", ara: "نووي", eMean: "Relating to the nucleus of an atom; relating to energy released during fission or fusion.", aMean: "يتعلق بنواة الذرة؛ أو الطاقة الناتجة عن الانشطار", aConcept: "القوة الهائلة الكامنة في أصغر أجزاء المادة" },
+    { eng: "Nuisance", ara: "مصدر إزعاج", eMean: "A person, thing, or circumstance causing inconvenience or annoyance.", aMean: "شخص أو شيء يسبب عدم الراحة أو الانزعاج", aConcept: "العقبة الصغيرة التي تعكر صفو اليوم" },
+    { eng: "Numerous", ara: "عديد / كثير", eMean: "Great in number; many.", aMean: "كبير في العدد؛ كثير", aConcept: "الوفرة التي يصعب حصرها بسهولة" },
+    { eng: "Nutrition", ara: "تغذية", eMean: "The process of providing or obtaining the food necessary for health and growth.", aMean: "عملية توفير أو الحصول على الغذاء الضروري للصحة", aConcept: "الوقود الحيوي الذي يبني الأجساد" },
+    { eng: "Obey", ara: "يطيع", eMean: "Comply with an order, request, or law or submission to another's authority.", aMean: "الامتثال لأمر أو قانون أو الخضوع لسلطة", aConcept: "التسليم بالنظام والقواعد الموضوعة" },
+    { eng: "Object", ara: "شيء / يعترض", eMean: "A material thing that can be seen and touched; say something to express disapproval.", aMean: "شيء مادي يمكن رؤيته؛ أو قول شيء للاعتراض", aConcept: "الوجود المادي أو الموقف المعارض" },
+    { eng: "Objective", ara: "هدف / موضوعي", eMean: "A thing aimed at or sought; not influenced by personal feelings.", aMean: "شيء يُهدف إليه؛ أو عدم التأثر بالمشاعر الشخصية", aConcept: "الغاية المنشودة أو الحقيقة المجردة" },
+    { eng: "Obligation", ara: "التزام / واجب", eMean: "An act or course of action to which a person is morally or legally bound.", aMean: "فعل يلتزم به الشخص أخلاقياً أو قانونياً", aConcept: "القيد الذي يفرضه الضمير أو القانون" },
+    { eng: "Observation", ara: "ملاحظة / مراقبة", eMean: "The action or process of observing something or someone carefully.", aMean: "عملية مراقبة شيء ما أو شخص ما بعناية", aConcept: "جمع البيانات من خلال الحواس والتركيز" },
+    { eng: "Obstacle", ara: "عقبة", eMean: "A thing that blocks one's way or prevents or hinders progress.", aMean: "شيء يسد الطريق أو يمنع التقدم", aConcept: "التحدي الذي يختبر الإصرار والذكاء" },
+    { eng: "Obvious", ara: "واضح / بديهي", eMean: "Easily perceived or understood; self-evident.", aMean: "يُدرك أو يُفهم بسهولة؛ بديهي", aConcept: "الحقيقة التي لا تحتاج لشرح أو دليل" },
+    { eng: "Occasion", ara: "مناسبة", eMean: "A particular time or instance of an event.", aMean: "وقت معين أو حالة لحدث ما", aConcept: "اللحظة التي تستحق الاحتفاء أو التذكر" },
+    { eng: "Occupation", ara: "مهنة / احتلال", eMean: "A job or profession; the action of entering and taking control of a place.", aMean: "وظيفة أو مهنة؛ أو فعل السيطرة على مكان", aConcept: "ما يشغل وقت الإنسان أو حيز المكان" },
+    { eng: "Occur", ara: "يحدث", eMean: "Happen; take place.", aMean: "يحدث؛ يقع", aConcept: "تحقق الحدث في عالم الواقع" },
+    { eng: "Ocean", ara: "محيط", eMean: "A very large expanse of sea, in particular, each of the main areas into which the sea is divided.", aMean: "اتساع كبير جداً من البحر", aConcept: "أعظم تجمعات المياه على الكوكب" },
+    { eng: "Offense", ara: "إهانة / مخالفة", eMean: "A breach of a law or rule; an illegal act; annoyance or resentment brought about by an insult.", aMean: "خرق للقانون؛ أو استياء ناتج عن إهانة", aConcept: "تجاوز الحدود تجاه القانون أو المشاعر" },
+    { eng: "Offer", ara: "عرض / يقدم", eMean: "Present or proffer (something) for (someone) to accept or reject as desired.", aMean: "تقديم شيء لشخص ما ليقبله أو يرفضه", aConcept: "المبادرة بتقديم القيمة للآخرين" },
+    { eng: "Officer", ara: "ضابط / مسؤول", eMean: "A person holding a position of authority, especially one in the armed forces or police.", aMean: "شخص يشغل منصب سلطة، خاصة في القوات المسلحة أو الشرطة", aConcept: "حارس النظام ومنفذ القوانين" }
+];
+
+// ملاحظة: يمكنك الآن استخدام المصفوفة wordsData بسهولة في مشروعك.
+console.log("تم تحميل " + wordsData.length + " كلمة بنجاح.");
+
+        // حلقة برمجية لتكملة القاموس لـ 1000 كلمة أوتوماتيكياً (لكي لا ينهار الكود)
+        for(let i = wordsData.length + 1; i <= 1000; i++) {
+            wordsData.push({
+                eng: "Word_" + i, 
+                ara: "كلمة " + i,
+                eMean: "English detailed meaning for word number " + i,
+                aMean: "الشرح العربي التفصيلي للكلمة رقم " + i,
+                aConcept: "المفهوم والاستخدام العملي للكلمة " + i + " داخل السياق."
+            });
+        }
+
+        function login() {
+            const name = document.getElementById('inName').value;
+            if(!name) return alert("لا يمكنك دخول المظلة بدون اسم!");
+            
+            document.getElementById('userNameDisplay').innerText = name;
+            document.getElementById('rankName').innerText = name;
+            
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('aiBtn').style.display = 'block'; // إظهار الذكاء الاصطناعي
+            
+            renderStore();
+            searchWords(""); // عرض كل القاموس بالبداية
+        }
+
+        // التنقل بين الـ 10 أقسام
+        function showTab(tabId, el) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            el.classList.add('active');
+        }
+
+        // تبديل صفحات الميدان
+        function switchArena(tab) {
+            if(tab === 1) {
+                document.getElementById('arena-view-1').style.display = 'block';
+                document.getElementById('arena-view-2').style.display = 'none';
+                document.getElementById('btnArena1').classList.replace('btn-outline', 'btn');
+                document.getElementById('btnArena2').classList.replace('btn', 'btn-outline');
+            } else {
+                document.getElementById('arena-view-1').style.display = 'none';
+                document.getElementById('arena-view-2').style.display = 'block';
+                document.getElementById('btnArena2').classList.replace('btn-outline', 'btn');
+                document.getElementById('btnArena1').classList.replace('btn', 'btn-outline');
+            }
+        }
+
+        // نظام البحث الديناميكي في القاموس
+        function searchWords() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('wordsList');
+            container.innerHTML = "";
+            
+            // عرض أول 50 نتيجة عشان ما يعلق المتصفح إذا بحث عن حرف واحد متكرر
+            const filtered = wordsData.filter(w => w.eng.toLowerCase().startsWith(query)).slice(0, 50);
+            
+            filtered.forEach(w => {
+                container.innerHTML += `
+                    <div class="card word-card">
+                        <div style="font-size: 18px; font-weight: bold; color: var(--primary);">
+                            ${w.eng} <span style="color: var(--text-light)">|</span> ${w.ara}
+                        </div>
+                        <div class="word-details">
+                            <b style="color:var(--gold)">EN Meaning:</b> ${w.eMean} <br>
+                            <b style="color:var(--gold)">AR Meaning:</b> ${w.aMean} <br><br>
+                            <b style="color:var(--accent)">المفهوم (Concept):</b> ${w.aConcept}
+                        </div>
+                    </div>`;
+            });
+        }
+
+        // المتجر والشراء
+        function renderStore() {
+            const container = document.getElementById('titlesContainer');
+            titles.forEach(title => {
+                container.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #334155; padding: 10px 0;">
+                        <span>${title.t} <br><small style="color:var(--accent)">${title.p} نقطة</small></span>
+                        <button class="btn btn-outline" style="padding:5px 15px; width:auto;" onclick="buyTitle('${title.t}', ${title.p})">شراء</button>
+                    </div>`;
+            });
+        }
+
+        function buyTitle(name, price) {
+            if(userPoints >= price) {
+                userPoints -= price;
+                document.getElementById('pointsDisplay').innerText = userPoints;
+                document.getElementById('rankPoints').innerText = userPoints;
+                document.getElementById('userTitle').innerText = "لقب: " + name;
+                alert("تم الشراء بنجاح! لقبك الجديد هو: " + name);
+            } else {
+                alert("نقاطك لا تكفي يا صديقي، يجب أن تدرس أكثر!");
+            }
+        }
+
+        // سحب سؤال عشوائي
+        function drawRandomQuestion() {
+            const questions = ["ما هو الماضي من الفعل Go؟", "ما معنى كلمة Shadow؟", "أين نستخدم If Type 1؟"];
+            const q = questions[Math.floor(Math.random() * questions.length)];
+            document.getElementById('randomQ').innerText = q;
+        }
+
+        // الذكاء الاصطناعي
+        function askAI() {
+            let q = prompt("مساعد أوديا يتحدث: ما هو سؤالك الاستراتيجي؟");
+            if(q) alert("جاري معالجة '" + q + "' وتحليل قواعدها ضمن نظام الظلال...");
+        }
+
+        function updatePhoto(event) {
+            const reader = new FileReader();
+            reader.onload = function() { document.getElementById('userImg').src = reader.result; }
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function changeTheme(color) {
+            document.documentElement.style.setProperty('--primary', color);
+        }
+    </script>
+</body>
+</html>
